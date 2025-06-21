@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Zane's Page</title>
+  <link rel="icon" type="image/x-icon" href="/img/Mii.png" </link>
+
+  <link rel="stylesheet" href="style/main.css">
+  <link rel="stylesheet" href="style/decoration.css">
+
+  <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+</head>
+
+<body>
+  <div hx-get="components/header.html" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <div id="content">
+    <div class="hbox">
+      <div class="post">
+        <h1>404</h1>
+        <p>Sorry, I don't know what you're asking for.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div hx-get="components/footer.html" hx-trigger="load" hx-swap="outerHTML"></div>
+</body>
+
+</html>

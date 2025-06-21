@@ -1,0 +1,68 @@
+* {
+  /* min-width defaults can be weird */
+  min-width: 0px;
+  font-family: monospace;
+}
+
+/* html { */
+/*   height: auto !important; */
+/*   padding-bottom: 1000px !important; */
+/* } */
+
+body {
+  background-color: #0f0f0f;
+  color: white;
+  margin: 0px;
+}
+
+div.post {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  margin: 16px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #222222;
+  border-radius: 32px;
+  box-shadow: 0px 8px 16px #000f;
+  background-color: #121212;
+}
+
+div.post>div {
+  margin: 16px;
+  margin-top: 0px;
+}
+
+
+div.center {
+  display: flex;
+  align-items: center;
+}
+
+
+div.hbox {
+  display: flex;
+  flex-direction: row;
+}
+
+div.vbox {
+  display: flex;
+  flex-direction: column;
+}
+
+.ease-in.htmx-added {
+  max-height: 0;
+  overflow: hidden;
+}
+
+.ease-in {
+  max-height: 1000px;
+  overflow: hidden;
+  transition: max-height 1s ease-in;
+}
+
+video,
+img {
+  border-radius: 16px;
+  max-width: 100%;
+}

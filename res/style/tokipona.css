@@ -1,0 +1,8 @@
+@font-face {
+  font-family: "nishiki";
+  src: url("nishiki-teki-lili.ttf");
+}
+
+.sitelenpona {
+  font-family: "nishiki";
+}
