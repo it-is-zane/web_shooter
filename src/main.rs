@@ -30,16 +30,30 @@ fn main() {
 }
 
 fn handle_connection(mut stream: TcpStream, file_manager: FileManager) {
+    stream
+        .set_read_timeout(Some(std::time::Duration::from_secs(10)))
+        .expect("failed to set read timeout");
+
     let buf_reader = BufReader::new(&mut stream);
-    let request_line = buf_reader.lines().next().unwrap().unwrap();
+    let mut lines = buf_reader.lines();
+    let request_line = lines.next().unwrap().unwrap();
     println!("{request_line}");
+
+    // let header_stream = stream.try_clone().unwrap();
+    // std::thread::spawn(|| {
+    //     let buf_reader = BufReader::new(header_stream);
+    //     buf_reader
+    //         .lines()
+    //         .map_while(Result::ok)
+    //         .for_each(|line| println!("{line}"));
+    // });
 
     let path = request_line.split(' ').nth(1).unwrap();
 
     let not_found = || {
         (
             "HTTP/1.1 404 NOT FOUND",
-            file_manager.get("res/404.html").unwrap(),
+            file_manager.get("404.html").unwrap(),
         )
     };
 
@@ -54,16 +68,44 @@ fn handle_connection(mut stream: TcpStream, file_manager: FileManager) {
         },
     };
 
+    let game_header_fix = |response: &mut Vec<u8>| {
+        if path.to_lowercase().contains("game") {
+            response.extend("Cross-Origin-Embedder-Policy: require-corp\r\n".as_bytes());
+            response.extend("Cross-Origin-Opener-Policy: same-origin\r\n".as_bytes());
+            response.extend("Cross-Origin-Resource-Policy: cross-origin\r\n".as_bytes());
+        }
+    };
+
+    let set_mime_type = |response: &mut Vec<u8>| {
+        response.extend(
+            format!(
+                "Content-Type: {} \r\n",
+                match path.split('.').next_back() {
+                    Some("pck") => "application/octet-stream",
+                    Some("wasm") => "application/wasm",
+                    Some("js") => "text/javascript",
+                    Some("html") => "text/html",
+                    Some(_) => "text",
+                    None => "",
+                }
+            )
+            .as_bytes(),
+        );
+    };
+
     let response = match *contents {
-        File::None => todo!(),
         File::Plain(ref contents) => {
             let length = contents.len();
 
             println!("{status_line} Content-Length: {length}");
 
             let mut response =
-                format!("{status_line}\r\nContent-Length: {length}\r\n\r\n").into_bytes();
+                format!("{status_line}\r\nContent-Length: {length}\r\n").into_bytes();
 
+            game_header_fix(&mut response);
+            set_mime_type(&mut response);
+
+            response.extend("\r\n".as_bytes());
             response.extend(contents);
 
             response
@@ -73,10 +115,14 @@ fn handle_connection(mut stream: TcpStream, file_manager: FileManager) {
 
             println!("{status_line} Content-Length: {length} Content-Encoding: br");
 
-            let mut response = format!(
-                "{status_line}\r\nContent-Length: {length}\r\nContent-Encoding: br\r\n\r\n"
-            )
-            .into_bytes();
+            let mut response =
+                format!("{status_line}\r\nContent-Length: {length}\r\nContent-Encoding: br\r\n")
+                    .into_bytes();
+
+            game_header_fix(&mut response);
+            set_mime_type(&mut response);
+
+            response.extend("\r\n".as_bytes());
 
             response.extend(contents);
 
@@ -89,7 +135,6 @@ fn handle_connection(mut stream: TcpStream, file_manager: FileManager) {
 }
 
 enum File {
-    None,
     Plain(Vec<u8>),
     Br(Vec<u8>),
 }
@@ -117,8 +162,7 @@ impl FileManager {
             Ok(contents) => {
                 let file = if ".html .txt .css .js .exe .ttf .otf"
                     .split(' ')
-                    .find(|ext| path.ends_with(ext))
-                    .is_some()
+                    .any(|ext| path.ends_with(&ext))
                 {
                     let mut compressor = brotlic::CompressorWriter::new(Vec::new());
                     compressor
@@ -141,7 +185,10 @@ impl FileManager {
 
                 Ok(file)
             }
-            Err(_) => todo!("File not found {path}"),
+            Err(_) => {
+                eprintln!("File not found {path}");
+                Err(())
+            }
         }
     }
 }
